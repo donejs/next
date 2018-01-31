@@ -235,7 +235,7 @@ npm 3.x and up">Setting Up DoneJS</a> guide to ensure you have all of the prereq
 </blockquote>
 <h3>Create the project</h3>
 <p>To get started, let's install the DoneJS command line utility globally:</p>
-<pre><code class="language-shell">npm install -g donejs@1
+<pre><code class="language-shell">npm install -g donejs@pre
 </code></pre>
 <p>Then we can create a new DoneJS application:</p>
 <pre><code class="language-shell">donejs add app place-my-order
@@ -374,12 +374,16 @@ import route from 'can-route';
 import 'can-route-pushstate';
 
 const AppViewModel = DefineMap.extend({
+  env: {
+    default: () =&gt; ({NODE_ENV:'development'}),
+    serialize: false
+  },
   message: {
-    value: 'Hello World!',
+    default: 'Hello World!',
     serialize: false
   },
   title: {
-    value: 'place-my-order',
+    default: 'place-my-order',
     serialize: false
   }
 });
@@ -420,7 +424,7 @@ export default AppViewModel;
 
     export default DefineMap.extend({
       message: {
-        value: 'This is the pmo-home component'
+        default: 'This is the pmo-home component'
       }
     });
   &lt;/script&gt;
@@ -455,7 +459,7 @@ Here we created a <a href="https://canjs.com/doc/can-component.html">can-compone
 
     export default DefineMap.extend({
       message: {
-        value: 'This is the pmo-order-history component'
+        default: 'This is the pmo-order-history component'
       }
     });
   &lt;/script&gt;
@@ -507,14 +511,14 @@ const AppViewModel = DefineMap.extend({
   action: 'string',
 
   title: {
-    value: 'place-my-order',
+    default: 'place-my-order',
     serialize: false
   }
 });
 
-route('{page}', { page: 'home' });
-route('{page}/{slug}', { slug: null });
-route('{page}/{slug}/{action}', { slug: null, action: null });
+route.register('{page}', { page: 'home' });
+route.register('{page}/{slug}', { slug: null });
+route.register('{page}/{slug}/{action}', { slug: null, action: null });
 
 export default AppViewModel;
 
@@ -565,7 +569,7 @@ it is not needed.</p>
 
     export default DefineMap.extend({
       message: {
-        value: 'This is the pmo-header component'
+        default: 'This is the pmo-header component'
       }
     });
   &lt;/script&gt;
@@ -598,7 +602,7 @@ Here we use <a href="https://canjs.com/doc/can-stache.helpers.routeUrl.html">rou
 
     export default DefineMap.extend({
       message: {
-        value: 'This is the pmo-loading component'
+        default: 'This is the pmo-loading component'
       }
     });
   &lt;/script&gt;
@@ -840,7 +844,7 @@ export const ViewModel = DefineMap.extend({
   },
   state: {
     type: 'string',
-    value: null,
+    default: null,
     set() {
       // Remove the city when the state changes
       this.city = null;
@@ -857,7 +861,7 @@ export const ViewModel = DefineMap.extend({
   },
   city: {
     type: 'string',
-    value: null
+    default: null
   },
   get restaurants() {
     let state = this.state;
@@ -1206,8 +1210,8 @@ git pull origin master
 <p>In this section, we will add additional pages that are shown under nested urls such as <code>restaurants/cheese-curd-city/order</code>.</p>
 <div></div>
 <p>Until now we've used three top level routes: <code>home</code>, <code>restaurants</code> and <code>order-history</code>. We did however also define two additional routes in <code>src/app.js</code> which looked like:</p>
-<pre><code class="language-js">route('{page}/{slug}', { slug: null });
-route('{page}/{slug}/{action}', { slug: null, action: null });
+<pre><code class="language-js">route.register('{page}/{slug}', { slug: null });
+route.register('{page}/{slug}/{action}', { slug: null, action: null });
 </code></pre>
 <p>We want to use those routes when we are in the <code>restaurants</code> page. The relevant section in <code>src/index.stache</code> currently looks like this:</p>
 <pre><code class="language-html">{{#case &quot;restaurants&quot;}}
@@ -1448,10 +1452,10 @@ const Order = DefineMap.extend({
   restaurant: 'string',
 
   status: {
-    value: 'new'
+    default: 'new'
   },
   items: {
-    Value: ItemsList
+    Default: ItemsList
   },
   get total() {
     let total = 0.0;
@@ -1499,7 +1503,7 @@ export const ViewModel = DefineMap.extend({
   slug: 'string',
   saveStatus: '*',
   order: {
-    Value: Order
+    Default: Order
   },
   get restaurantPromise() {
     return Restaurant.get({ _id: this.slug });
@@ -1739,10 +1743,10 @@ const Order = DefineMap.extend({
   restaurant: 'string',
 
   status: {
-    value: 'new'
+    default: 'new'
   },
   items: {
-    Value: ItemsList
+    Default: ItemsList
   },
   get total() {
     let total = 0.0;
@@ -1938,10 +1942,10 @@ const Order = DefineMap.extend({
   restaurant: 'string',
 
   status: {
-    value: 'new'
+    default: 'new'
   },
   items: {
-    Value: ItemsList
+    Default: ItemsList
   },
   get total() {
     let total = 0.0;
@@ -2029,7 +2033,7 @@ export const ViewModel = DefineMap.extend({
    * be an empty new order inititally.
    */
   order: {
-    Value: Order
+    Default: Order
   },
   /**
     * @property {Promise} restaurantPromise

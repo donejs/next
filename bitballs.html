@@ -677,7 +677,7 @@ model to retrieve the current session.  If there is a session, it will
 be stored on the AppViewModel.</p>
 <pre><code class="language-js">session: {
   serialize: false,
-  value: function() {
+  default: function() {
     Session.get({}).then((session) =&gt; {
       this.session = session;
     });
