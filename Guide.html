@@ -83,6 +83,7 @@
 									<li><a href="./bitballs.html">Example App: Bitballs</a></li>
                   <li><a href="./ssr-react.html">Server rendering React</a></li>
 									<li><a href="./migrate-1.html">Migrate to DoneJS 1</a></li>
+                  <li><a href="./migrate-2.html">Migrate to DoneJS 2</a></li>
 									<li><a href="./contributing.html">Contributing</a></li>
 								</ul>
 							</li>
@@ -284,8 +285,8 @@ npm 3.x and up">Setting Up DoneJS</a> guide to ensure you have all of the prereq
   &lt;/head&gt;
   &lt;body&gt;
     &lt;can-import from=&quot;bootstrap/less/bootstrap.less&quot; /&gt;
-    &lt;can-import from=&quot;donejs-chat/styles.less&quot; /&gt;
-    &lt;can-import from=&quot;donejs-chat/app&quot; export-as=&quot;viewModel&quot; /&gt;
+    &lt;can-import from=&quot;~/styles.less&quot; /&gt;
+    &lt;can-import from=&quot;~/app&quot; export-as=&quot;viewModel&quot; /&gt;
 
     &lt;div class=&quot;container&quot;&gt;
       &lt;div class=&quot;row&quot;&gt;
@@ -414,14 +415,14 @@ property.</li>
   &lt;/head&gt;
   &lt;body&gt;
     &lt;can-import from=&quot;bootstrap/less/bootstrap.less&quot; /&gt;
-    &lt;can-import from=&quot;donejs-chat/styles.less&quot; /&gt;
-    &lt;can-import from=&quot;donejs-chat/app&quot; export-as=&quot;viewModel&quot; /&gt;
+    &lt;can-import from=&quot;~/styles.less&quot; /&gt;
+    &lt;can-import from=&quot;~/app&quot; export-as=&quot;viewModel&quot; /&gt;
 
     &lt;div class=&quot;container&quot;&gt;
       &lt;div class=&quot;row&quot;&gt;
         &lt;div class=&quot;col-sm-8 col-sm-offset-2&quot;&gt;
           {{#eq(page, 'chat')}}
-            &lt;can-import from=&quot;donejs-chat/messages/&quot;&gt;
+            &lt;can-import from=&quot;~/messages/&quot;&gt;
               {{#if(isPending)}}
                 Loading...
               {{else}}
@@ -429,7 +430,7 @@ property.</li>
               {{/if}}
             &lt;/can-import&gt;
           {{else}}
-            &lt;can-import from=&quot;donejs-chat/home.component&quot;&gt;
+            &lt;can-import from=&quot;~/home.component&quot;&gt;
               {{#if(isPending)}}
                 Loading...
               {{else}}

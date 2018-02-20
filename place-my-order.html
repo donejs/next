@@ -83,6 +83,7 @@
 									<li><a href="./bitballs.html">Example App: Bitballs</a></li>
                   <li><a href="./ssr-react.html">Server rendering React</a></li>
 									<li><a href="./migrate-1.html">Migrate to DoneJS 1</a></li>
+                  <li><a href="./migrate-2.html">Migrate to DoneJS 2</a></li>
 									<li><a href="./contributing.html">Contributing</a></li>
 								</ul>
 							</li>
@@ -343,8 +344,8 @@ load the static assets and set a <code>&lt;meta&gt;</code> tag to support a resp
   &lt;/head&gt;
   &lt;body&gt;
     &lt;can-import from=&quot;place-my-order-assets&quot; /&gt;
-    &lt;can-import from=&quot;place-my-order/styles.less&quot; /&gt;
-    &lt;can-import from=&quot;place-my-order/app&quot; export-as=&quot;viewModel&quot; /&gt;
+    &lt;can-import from=&quot;~/styles.less&quot; /&gt;
+    &lt;can-import from=&quot;~/app&quot; export-as=&quot;viewModel&quot; /&gt;
 
     &lt;h1&gt;{{message}}&lt;/h1&gt;
 
@@ -408,7 +409,7 @@ export default AppViewModel;
     &lt;can-import from=&quot;can-stache-route-helpers&quot; /&gt;
     &lt;div class=&quot;homepage&quot;&gt;
       &lt;img src=&quot;{{joinBase('node_modules/place-my-order-assets/images/homepage-hero.jpg')}}&quot;
-          width=&quot;250&quot; height=&quot;380&quot; /&gt;
+          alt=&quot;Restaurant table with glasses.&quot; width=&quot;250&quot; height=&quot;380&quot; /&gt;
       &lt;h1&gt;Ordering food has never been easier&lt;/h1&gt;
       &lt;p&gt;
         We make it easier than ever to order gourmet food
@@ -620,28 +621,28 @@ Here we use <a href="https://canjs.com/doc/can-stache.helpers.routeUrl.html">rou
   &lt;/head&gt;
   &lt;body&gt;
     &lt;can-import from=&quot;place-my-order-assets&quot; /&gt;
-    &lt;can-import from=&quot;place-my-order/styles.less&quot; /&gt;
-    &lt;can-import from=&quot;place-my-order/app&quot; export-as=&quot;viewModel&quot; /&gt;
+    &lt;can-import from=&quot;~/styles.less&quot; /&gt;
+    &lt;can-import from=&quot;~/app&quot; export-as=&quot;viewModel&quot; /&gt;
 
-    &lt;can-import from=&quot;place-my-order/loading.component&quot; /&gt;
-    &lt;can-import from=&quot;place-my-order/header.component&quot; /&gt;
+    &lt;can-import from=&quot;~/loading.component&quot; /&gt;
+    &lt;can-import from=&quot;~/header.component&quot; /&gt;
     &lt;pmo-header page:from=&quot;page&quot;/&gt;
 
     {{#switch page}}
       {{#case &quot;home&quot;}}
-        &lt;can-import from=&quot;place-my-order/home.component&quot;
+        &lt;can-import from=&quot;~/home.component&quot;
             can-tag=&quot;pmo-loading&quot;&gt;
           &lt;pmo-home/&gt;
         &lt;/can-import&gt;
       {{/case}}
       {{#case &quot;restaurants&quot;}}
-        &lt;can-import from=&quot;place-my-order/restaurant/list/&quot;
+        &lt;can-import from=&quot;~/restaurant/list/&quot;
             can-tag=&quot;pmo-loading&quot;&gt;
           &lt;pmo-restaurant-list/&gt;
         &lt;/can-import&gt;
       {{/case}}
       {{#case &quot;order-history&quot;}}
-        &lt;can-import from=&quot;place-my-order/order/history.component&quot;
+        &lt;can-import from=&quot;~/order/history.component&quot;
             can-tag=&quot;pmo-loading&quot;&gt;
           &lt;pmo-order-history/&gt;
         &lt;/can-import&gt;
@@ -745,7 +746,7 @@ of all restaurants on the server and log them to the console.</p>
 import DefineMap from 'can-define/map/';
 import './list.less';
 import view from './list.stache';
-import Restaurant from 'place-my-order/models/restaurant';
+import Restaurant from '~/models/restaurant';
 
 export const ViewModel = DefineMap.extend({
   restaurants: {
@@ -834,9 +835,9 @@ And update the template at <code>src/restaurant/list/list.stache</code> to use t
 import DefineMap from 'can-define/map/';
 import './list.less';
 import view from './list.stache';
-import Restaurant from 'place-my-order/models/restaurant';
-import State from 'place-my-order/models/state';
-import City from 'place-my-order/models/city';
+import Restaurant from '~/models/restaurant';
+import State from '~/models/state';
+import City from '~/models/city';
 
 export const ViewModel = DefineMap.extend({
   get states() {
@@ -968,12 +969,12 @@ export default store;
 <h4>Test the view model</h4>
 <p>With fake data in place, we can test our view model by changing <code>src/restaurant/list/list-test.js</code> to:</p>
 <pre><code class="language-js">import QUnit from 'steal-qunit';
-import cityStore from 'place-my-order/models/fixtures/cities';
-import stateStore from 'place-my-order/models/fixtures/states';
-import restaurantStore from 'place-my-order/models/fixtures/restaurants';
+import cityStore from '~/models/fixtures/cities';
+import stateStore from '~/models/fixtures/states';
+import restaurantStore from '~/models/fixtures/restaurants';
 import { ViewModel } from './list';
 
-QUnit.module('place-my-order/restaurant/list', {
+QUnit.module('~/restaurant/list', {
   beforeEach() {
     localStorage.clear();
   }
@@ -1116,8 +1117,8 @@ Some things worth pointing out:</p>
 <p>We already have an existing demo page at <a href="http://localhost:8080/src/restaurant/list/list.html">src/restaurant/list/list.html</a>. We'll update it to load fixtures so it can demonstrate the use of the pmo-restaurnt-list component:</p>
 <pre><code class="language-html">&lt;script type=&quot;text/stache&quot; can-autorender&gt;
   &lt;can-import from=&quot;place-my-order-assets&quot; /&gt;
-  &lt;can-import from=&quot;place-my-order/models/fixtures/&quot; /&gt;
-  &lt;can-import from=&quot;place-my-order/restaurant/list/&quot; /&gt;
+  &lt;can-import from=&quot;~/models/fixtures/&quot; /&gt;
+  &lt;can-import from=&quot;~/restaurant/list/&quot; /&gt;
   &lt;pmo-restaurant-list/&gt;
 &lt;/script&gt;
 &lt;script src=&quot;../../../node_modules/steal/steal.js&quot;
@@ -1133,7 +1134,7 @@ View the demo page at <a href="http://localhost:8080/src/restaurant/list/list.ht
 <pre><code class="language-js">import F from 'funcunit';
 import QUnit from 'steal-qunit';
 
-import 'place-my-order/restaurant/list/list-test';
+import '~/restaurant/list/list-test';
 
 F.attach(QUnit);
 
@@ -1233,7 +1234,7 @@ route.register('{page}/{slug}/{action}', { slug: null, action: null });
 <p>And change <code>src/restaurant/details.component</code> to:</p>
 <pre><code class="language-html">&lt;can-component tag=&quot;pmo-restaurant-details&quot;&gt;
   &lt;view&gt;
-    &lt;can-import from=&quot;place-my-order/models/restaurant&quot; /&gt;
+    &lt;can-import from=&quot;~/models/restaurant&quot; /&gt;
     &lt;can-import from=&quot;can-stache-route-helpers&quot; /&gt;
     {{#if(restaurantPromise.isPending)}}
       &lt;div class=&quot;loading&quot;&gt;&lt;/div&gt;
@@ -1278,7 +1279,7 @@ route.register('{page}/{slug}/{action}', { slug: null, action: null });
   &lt;/view&gt;
   &lt;script type=&quot;view-model&quot;&gt;
     import DefineMap from 'can-define/map/';
-    import Restaurant from 'place-my-order/models/restaurant';
+    import Restaurant from '~/models/restaurant';
 
     export default DefineMap.extend({
       get restaurantPromise() {
@@ -1308,21 +1309,21 @@ the following chapters.</p>
   {{#if(slug)}}
     {{#switch action}}
       {{#case 'order'}}
-        &lt;can-import from=&quot;place-my-order/order/new/&quot;
+        &lt;can-import from=&quot;~/order/new/&quot;
             can-tag=&quot;pmo-loading&quot;&gt;
           &lt;pmo-order-new slug:from=&quot;slug&quot;/&gt;
         &lt;/can-import&gt;
       {{/case}}
 
       {{#default}}
-        &lt;can-import from=&quot;place-my-order/restaurant/details.component&quot;
+        &lt;can-import from=&quot;~/restaurant/details.component&quot;
             can-tag=&quot;pmo-loading&quot;&gt;
           &lt;pmo-restaurant-details slug:from=&quot;slug&quot;/&gt;
         &lt;/can-import&gt;
       {{/default}}
     {{/switch}}
   {{else}}
-    &lt;can-import from=&quot;place-my-order/restaurant/list/&quot;
+    &lt;can-import from=&quot;~/restaurant/list/&quot;
         can-tag=&quot;pmo-loading&quot;&gt;
       &lt;pmo-restaurant-list/&gt;
     &lt;/can-import&gt;
@@ -1496,8 +1497,8 @@ Here we define an <code>ItemsList</code> which allows us to toggle menu items an
 import DefineMap from 'can-define/map/';
 import './new.less';
 import view from './new.stache';
-import Restaurant from 'place-my-order/models/restaurant';
-import Order from 'place-my-order/models/order';
+import Restaurant from '~/models/restaurant';
+import Order from '~/models/order';
 
 export const ViewModel = DefineMap.extend({
   slug: 'string',
@@ -1542,7 +1543,7 @@ Here we just define the properties that we need: <code>slug</code>, <code>order<
 import { ViewModel } from './new';
 
 // ViewModel unit tests
-QUnit.module('place-my-order/order/new');
+QUnit.module('~/order/new');
 
 QUnit.test('canPlaceOrder', function(){
   var vm = new ViewModel({
@@ -1596,7 +1597,7 @@ QUnit.test('canPlaceOrder', function(){
 </code></pre>
 <p>Now we can import that component and update <code>src/order/new/new.stache</code> to:</p>
 <pre><code class="language-html">&lt;can-import from=&quot;bit-tabs/unstyled&quot; /&gt;
-&lt;can-import from=&quot;place-my-order/order/details.component&quot; /&gt;
+&lt;can-import from=&quot;~/order/details.component&quot; /&gt;
 
 &lt;div class=&quot;order-form&quot;&gt;
   {{#if(restaurantPromise.isPending)}}
@@ -1837,7 +1838,7 @@ The model can now be used in the template like <code>&lt;order-model get-list=&q
 <p>Also update the order history template by changing <code>src/order/history.component</code> to:</p>
 <pre><code class="language-html">&lt;can-component tag=&quot;pmo-order-history&quot;&gt;
   &lt;view&gt;
-    &lt;can-import from=&quot;place-my-order/models/order&quot; /&gt;
+    &lt;can-import from=&quot;~/models/order&quot; /&gt;
 
     &lt;div class=&quot;order-history&quot;&gt;
       &lt;div class=&quot;order header&quot;&gt;
@@ -1847,7 +1848,7 @@ The model can now be used in the template like <code>&lt;order-model get-list=&q
         &lt;div class=&quot;actions&quot;&gt;Action&lt;/div&gt;
       &lt;/div&gt;
 
-      &lt;can-import from=&quot;place-my-order/order/list.component&quot; /&gt;
+      &lt;can-import from=&quot;~/order/list.component&quot; /&gt;
       &lt;order-model get-list=&quot;{status='new'}&quot;&gt;
         &lt;pmo-order-list
           orders:from=&quot;.&quot;
@@ -2005,11 +2006,11 @@ That's it. If we now open the <a href="http://localhost:8080/order-history">orde
 import DefineMap from 'can-define/map/';
 import './new.less';
 import view from './new.stache';
-import Restaurant from 'place-my-order/models/restaurant';
-import Order from 'place-my-order/models/order';
+import Restaurant from '~/models/restaurant';
+import Order from '~/models/order';
 
 /**
- * @add place-my-order/order/new
+ * @add ~/order/new
  */
 export const ViewModel = DefineMap.extend({
   /**
@@ -2027,7 +2028,7 @@ export const ViewModel = DefineMap.extend({
     */
   saveStatus: '*',
   /**
-   * @property {place-my-order/models/order} order
+   * @property {~/models/order} order
    *
    * the order that is being processed. will
    * be an empty new order inititally.
@@ -2045,7 +2046,7 @@ export const ViewModel = DefineMap.extend({
     return Restaurant.get({ _id: this.slug });
   },
   /**
-   * @property {place-my-order/models/restaurant} restaurant
+   * @property {~/models/restaurant} restaurant
    *
    * the restaurant that is being ordered from.
    */
