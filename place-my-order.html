@@ -236,10 +236,10 @@ npm 3.x and up">Setting Up DoneJS</a> guide to ensure you have all of the prereq
 </blockquote>
 <h3>Create the project</h3>
 <p>To get started, let's install the DoneJS command line utility globally:</p>
-<pre><code class="language-shell">npm install -g donejs@pre
+<pre><code class="language-shell">npm install -g donejs
 </code></pre>
 <p>Then we can create a new DoneJS application:</p>
-<pre><code class="language-shell">donejs add app place-my-order
+<pre><code class="language-shell">donejs add app place-my-order --yes
 </code></pre>
 <p>The initialization process will ask you questions like the name of your application (set to <code>place-my-order</code>) and the source folder (set to <code>src</code>). The other questions can be skipped by hitting enter. This will install all of DoneJS' dependencies. The main project dependencies include:</p>
 <ul>
@@ -312,7 +312,7 @@ Which allows us to start the server like:</p>
 </code></pre>
 <p>The first time it starts, the server will initialize some default data (restaurants and orders). Once started, you can verify that the data has been created and the service is running by going to <a href="http://localhost:7070/restaurants">http://localhost:7070/restaurants</a>, where we can see a JSON list of restaurant data.</p>
 <h3>Starting the application</h3>
-<p>Now our application is good to go and we can start the server. We need to proxy the <code>place-my-order-api</code> server to <code>/api</code> on our server in order to avoid violating the same origin policy. This means that we need to modify the <code>start</code> and <code>develop</code> script in our <code>package.json</code> to:</p>
+<p>Now our application is good to go and we can start the server. We need to proxy the <code>place-my-order-api</code> server to <code>/api</code> on our server in order to avoid violating the <a href="https://en.wikipedia.org/wiki/Same-origin_policy">same origin policy</a>. This means that we need to modify the <code>start</code> and <code>develop</code> script in our <code>package.json</code> to:</p>
 <pre><code class="language-js">&quot;scripts&quot;: {
   &quot;api&quot;: &quot;place-my-order-api --port 7070&quot;,
   &quot;test&quot;: &quot;testee test.html --browsers firefox --reporter Spec&quot;,
@@ -373,6 +373,7 @@ This is an HTML5 template that uses <a href="https://canjs.com/doc/can-stache.ht
 import DefineMap from 'can-define/map/';
 import route from 'can-route';
 import 'can-route-pushstate';
+import 'can-debug#?./is-dev';
 
 const AppViewModel = DefineMap.extend({
   env: {
@@ -505,6 +506,7 @@ Here we created a <a href="https://canjs.com/doc/can-component.html">can-compone
 <pre><code class="language-js">import DefineMap from 'can-define/map/';
 import route from 'can-route';
 import 'can-route-pushstate';
+import 'can-debug#?./is-dev';
 
 const AppViewModel = DefineMap.extend({
   page: 'string',
@@ -524,7 +526,7 @@ route.register('{page}/{slug}/{action}', { slug: null, action: null });
 export default AppViewModel;
 
 </code></pre>
-<p><span line-highlight='6-8,16-18,only'></span></p>
+<p><span line-highlight='7-9,17-19,only'></span></p>
 <blockquote>
 <p>Notice: We also removed the <code>message</code> property in <code>AppViewModel</code>.  This is because
 it is not needed.</p>
@@ -1166,7 +1168,7 @@ QUnit.test('place-my-order main page shows up', function() {
 git remote add origin https://github.com/&lt;your-username&gt;/place-my-order.git
 </code></pre>
 <p>Then we can add all files and push to origin like this:</p>
-<pre><code class="language-shell">git add . --all
+<pre><code class="language-shell">git add --all
 git commit -am &quot;Initial commit&quot;
 git push origin master
 </code></pre>
@@ -1178,24 +1180,37 @@ git push origin master
 <p>Continuous integration on GitHub is most useful when using <a href="https://help.github.com/categories/collaborating-on-projects-using-pull-requests/">branches and pull requests</a>. That way your main branch (master) will only get new code changes if all tests pass. Let's create a new branch with</p>
 <pre><code class="language-shell">git checkout -b travis-ci
 </code></pre>
-<p>And add a <code>.travis.yml</code> file to our project root:</p>
+<p>Run the <a href="https://github.com/donejs/donejs-travis/">donejs-travis</a> generator to add a <code>.travis.yml</code> file to our project root, and to add a <em>Build Passing</em> badge to the top of <code>readme.md</code>:</p>
+<pre><code class="language-shell">donejs add travis
+</code></pre>
+<p>When prompted, confirm the GitHub user name and repository by pressing the Enter key, you can also enter new values if needed:</p>
+<pre><code class="language-shell">? What is the GitHub owner name? (&lt;your-username&gt;)
+? What is the GitHub repository name? (place-my-order)
+</code></pre>
+<p>Following these questions, the generator will first update the <a href="https://docs.npmjs.com/files/package.json#repository">package.json's repository</a> field to point it to where your code lives.</p>
+<p>Confirm the changes by pressing the Enter key,</p>
+<pre><code> conflict package.json
+? Overwrite package.json? (Ynaxdh)
+</code></pre>
+<blockquote>
+<p>You can also press the <code>d</code> key to see a diff of the changes before writing to the file.</p>
+</blockquote>
+<p>Then, the generator creates a <code>.travis.yml</code> file and updates <code>readme.md</code> to include a badge indicating the status of the build, confirm the changes by pressing the Enter key:</p>
+<pre><code class="language-shell">conflict README.md
+? Overwrite README.md? (Ynaxdh)
+</code></pre>
+<p>The generated <code>.travis.yml</code> should look like this:</p>
 <pre><code class="language-shell">language: node_js
 node_js: node
 addons:
-  firefox: &quot;latest&quot;
+  firefox: latest
 before_install:
-  - &quot;export DISPLAY=:99.0&quot;
-  - &quot;sh -e /etc/init.d/xvfb start&quot;
+  - 'export DISPLAY=:99.0'
+  - sh -e /etc/init.d/xvfb start
 </code></pre>
 <p>By default Travis CI runs <code>npm test</code> for NodeJS projects which is what we want. <code>before_install</code> sets up a window system to run Firefox.</p>
-<p>We can also add a <em>Build Passing</em> badge to the top <code>readme.md</code>:</p>
-<pre><code>[![Build Status](https://travis-ci.org/&lt;your-username&gt;/place-my-order.png?branch=master)](https://travis-ci.org/&lt;your-username&gt;/place-my-order)
-
-# place-my-order
-</code></pre>
-<p><span line-highlight='1,only'></span>
-To see Travis run, let's add all changes and push to the branch:</p>
-<pre><code class="language-shell">git add readme.md .travis.yml
+<p>To see Travis run, let's add all changes and push to the branch:</p>
+<pre><code class="language-shell">git add --all
 git commit -am &quot;Enabling Travis CI&quot;
 git push origin travis-ci
 </code></pre>
@@ -1339,18 +1354,18 @@ the following chapters.</p>
 </ul>
 <h2>Importing other projects</h2>
 <p>The npm integration of StealJS makes it very easy to share and import other components. One thing we want to do when showing the <code>pmo-order-new</code> component is have a tab to choose between the lunch and dinner menu. The good news is that there is already a <a href="https://github.com/bitovi-components/bit-tabs">bit-tabs</a> component which does exactly that. Let's add it as a project dependency with:</p>
-<pre><code class="language-shell">npm install bit-tabs@pre --save
+<pre><code class="language-shell">npm install bit-tabs@2 --save
 </code></pre>
 <p>And then integrate it into <code>src/order/new/new.stache</code>:</p>
 <pre><code class="language-html">&lt;can-import from=&quot;bit-tabs/unstyled&quot;/&gt;
 &lt;div class=&quot;order-form&quot;&gt;
   &lt;h2&gt;Order here&lt;/h2&gt;
 
-  &lt;bit-tabs tabsClass:from=&quot;'nav nav-tabs'&quot;&gt;
-    &lt;bit-panel title:from=&quot;'Lunch menu'&quot;&gt;
+  &lt;bit-tabs tabsClass:raw=&quot;nav nav-tabs&quot;&gt;
+    &lt;bit-panel title:raw=&quot;Lunch menu&quot;&gt;
       This is the lunch menu
     &lt;/bit-panel&gt;
-    &lt;bit-panel title:from=&quot;'Dinner menu'&quot;&gt;
+    &lt;bit-panel title:raw=&quot;Dinner menu&quot;&gt;
       This is the dinner menu
     &lt;/bit-panel&gt;
   &lt;/bit-tabs&gt;
@@ -1489,7 +1504,7 @@ Order.connection = superMap({
 export default Order;
 
 </code></pre>
-<p><span line-highlight='7-27,33-53,only'></span>
+<p><span line-highlight='7-29,34-55,only'></span>
 Here we define an <code>ItemsList</code> which allows us to toggle menu items and check if they are already in the order. We set up ItemsList as the Value of the items property of an order so we can use its has function and toggle directly in the template. We also set a default value for status and a getter for calculating the order total which adds up all the item prices. We also create another <code>&lt;order-model&gt;</code> tag to load orders in the order history template later.</p>
 <h3>Implement the view model</h3>
 <p>Now we can update the view model in <code>src/order/new/new.js</code>:</p>
@@ -1612,7 +1627,7 @@ QUnit.test('canPlaceOrder', function(){
       &lt;h3&gt;Order from {{restaurant.name}}&lt;/h3&gt;
 
       &lt;form on:submit=&quot;placeOrder(scope.event)&quot;&gt;
-        &lt;bit-tabs tabsClass:from=&quot;'nav nav-tabs'&quot;&gt;
+        &lt;bit-tabs tabsClass:raw=&quot;nav nav-tabs&quot;&gt;
           &lt;p class=&quot;info {{^if(order.items.length)}}text-error{{else}}text-success{{/if}}&quot;&gt;
             {{^if(order.items.length)}}
               Please choose an item
@@ -1620,7 +1635,7 @@ QUnit.test('canPlaceOrder', function(){
               {{order.items.length}} selected
             {{/if}}
           &lt;/p&gt;
-          &lt;bit-panel title:from=&quot;'Lunch menu'&quot;&gt;
+          &lt;bit-panel title:raw=&quot;Lunch menu&quot;&gt;
             &lt;ul class=&quot;list-group&quot;&gt;
               {{#each(restaurant.menu.lunch)}}
                 &lt;li class=&quot;list-group-item&quot;&gt;
@@ -1634,7 +1649,7 @@ QUnit.test('canPlaceOrder', function(){
               {{/each}}
             &lt;/ul&gt;
           &lt;/bit-panel&gt;
-          &lt;bit-panel title:from=&quot;'Dinner menu'&quot;&gt;
+          &lt;bit-panel title:raw=&quot;Dinner menu&quot;&gt;
             &lt;ul class=&quot;list-group&quot;&gt;
               {{#each(restaurant.menu.dinner)}}
                 &lt;li class=&quot;list-group-item&quot;&gt;
@@ -1783,7 +1798,7 @@ tag('order-model', Order.connection);
 export default Order;
 
 </code></pre>
-<p><span line-highlight='6,63,74,only'></span>
+<p><span line-highlight='6,65,76,only'></span>
 The model can now be used in the template like <code>&lt;order-model get-list=&quot;{status='new'}&quot;&gt;</code>. This also adds an <a href="https://canjs.com/doc/can-set.props.enum.html">enum comparator</a> so that multiple requests for different statuses can be combined.</p>
 <h3>Update the template</h3>
 <p>First let's create the <code>pmo-order-list</code> component with:</p>
@@ -1852,43 +1867,43 @@ The model can now be used in the template like <code>&lt;order-model get-list=&q
       &lt;order-model get-list=&quot;{status='new'}&quot;&gt;
         &lt;pmo-order-list
           orders:from=&quot;.&quot;
-          list-title:from=&quot;'New Orders'&quot;
-          status:from=&quot;'new'&quot;
-          status-title:from=&quot;'New Order!''&quot;
-          action:from=&quot;'preparing'&quot;
-          action-title:from=&quot;'Preparing'&quot;
-          empty-message:from=&quot;'No new orders'&quot;/&gt;
+          list-title:raw=&quot;New Orders&quot;
+          status:raw=&quot;new&quot;
+          status-title:raw=&quot;New Order!&quot;
+          action:raw=&quot;preparing&quot;
+          action-title:raw=&quot;Preparing&quot;
+          empty-message:raw=&quot;No new orders&quot;/&gt;
       &lt;/order-model&gt;
 
       &lt;order-model get-list=&quot;{status='preparing'}&quot;&gt;
         &lt;pmo-order-list
           orders:from=&quot;.&quot;
-          list-title:from=&quot;'Preparing'&quot;
-          status:from=&quot;'preparing'&quot;
-          status-title:from=&quot;'Preparing'&quot;
-          action:from=&quot;'delivery'&quot;
-          action-title:from=&quot;'Out for delivery'&quot;
-          empty-message:from=&quot;'No orders preparing'&quot;/&gt;
+          list-title:raw=&quot;Preparing&quot;
+          status:raw=&quot;preparing&quot;
+          status-title:raw=&quot;Preparing&quot;
+          action:raw=&quot;delivery&quot;
+          action-title:raw=&quot;Out for delivery&quot;
+          empty-message:raw=&quot;No orders preparing&quot;/&gt;
       &lt;/order-model&gt;
 
       &lt;order-model get-list=&quot;{status='delivery'}&quot;&gt;
         &lt;pmo-order-list
           orders:from=&quot;.&quot;
-          list-title:from=&quot;'Out for delivery'&quot;
-          status:from=&quot;'delivery'&quot;
-          status-title:from=&quot;'Out for delivery'&quot;
-          action:from=&quot;'delivered'&quot;
-          action-title:from=&quot;'Delivered'&quot;
-          empty-message:from=&quot;'No orders are being delivered'&quot;/&gt;
+          list-title:raw=&quot;Out for delivery&quot;
+          status:raw=&quot;delivery&quot;
+          status-title:raw=&quot;Out for delivery&quot;
+          action:raw=&quot;delivered&quot;
+          action-title:raw=&quot;Delivered&quot;
+          empty-message:raw=&quot;No orders are being delivered&quot;/&gt;
       &lt;/order-model&gt;
 
       &lt;order-model get-list=&quot;{status='delivered'}&quot;&gt;
         &lt;pmo-order-list
           orders:from=&quot;.&quot;
-          list-title:from=&quot;'Delivered'&quot;
-          status:from=&quot;'delivered'&quot;
-          status-title:from=&quot;'Delivered'&quot;
-          empty-message:from=&quot;'No delivered orders'&quot;/&gt;
+          list-title:raw=&quot;Delivered&quot;
+          status:raw=&quot;delivered&quot;
+          status-title:raw=&quot;Delivered&quot;
+          empty-message:raw=&quot;No delivered orders&quot;/&gt;
       &lt;/order-model&gt;
     &lt;/div&gt;
   &lt;/view&gt;
@@ -1988,7 +2003,7 @@ tag('order-model', Order.connection);
 export default Order;
 
 </code></pre>
-<p><span line-highlight='7,75-79,only'></span>
+<p><span line-highlight='7,77-81,only'></span>
 That's it. If we now open the <a href="http://localhost:8080/order-history">order page</a> we see some already completed default orders. Keeping the page open and placing a new order from another browser or device will update our order page automatically.</p>
 <h2>Create documentation</h2>
 <p>Documenting our code is very important to quickly get other developers up to speed. <a href="https://documentjs.com/">DocumentJS</a> makes documenting code easier. It will generate a full documentation page from Markdown files and code comments in our project.</p>
@@ -2211,18 +2226,28 @@ donejs deploy
 <h3>Deploy your Node code</h3>
 <p>At this point your application has been deployed to a CDN. This contains StealJS, your production bundles and CSS, and any images or other static files. You still need to deploy your server code in order to get the benefit of server-side rendering.</p>
 <p>If you do not have an account yet, sign up for Heroku at <a href="https://signup.heroku.com/">signup.heroku.com</a>. Then download the <a href="https://devcenter.heroku.com/articles/heroku-command">Heroku CLI</a> which will be used to deploy.</p>
-<p>After installing we can initialize the application via</p>
-<pre><code class="language-shell">heroku login
-heroku create
+<p>After installing run the <a href="https://github.com/donejs/donejs-heroku">donejs-heroku</a> generator via:</p>
+<pre><code class="language-shell">donejs add heroku
 </code></pre>
-<p>This will return the url where your app can be viewed. Before you open it you'll need to update the NODE_ENV variable:</p>
+<p>Once you have logged in into your Heroku account, choose whether you want Heroku to use a random
+name for the application. If you choose not to use a random name, you will be prompted to enter
+the application name:</p>
+<blockquote>
+<p>We recommend you to use a random name since Heroku fails to create the app if the name is already taken.</p>
+</blockquote>
+<pre><code class="language-shell">? Do you want Heroku to use a random app name? Yes
+</code></pre>
+<p>When prompted, press the <code>Y</code> key since the application requires a proxy</p>
+<pre><code class="language-shell">? Does the application require a Proxy? Yes
+</code></pre>
+<p>Then enter <code>http://www.place-my-order.com/api</code> as the proxy url:</p>
+<pre><code class="language-shell">? What's the Proxy url? http://www.place-my-order.com/api
+</code></pre>
+<p>Once the generator finishes, update the NODE_ENV variable via:</p>
 <pre><code class="language-shell">heroku config:set NODE_ENV=production
 </code></pre>
-<p>Add a new <code>Procfile</code> that tells Heroku what to launch as the app's server. Since we are using done-serve our Procfile just looks like this:</p>
-<pre><code class="language-shell">web: node_modules/.bin/done-serve --proxy http://www.place-my-order.com/api
-</code></pre>
-<p>First let's save our current status:</p>
-<pre><code class="language-shell">git add -A
+<p>and follow the generator instructions to save our current changes:</p>
+<pre><code class="language-shell">git add --all
 git commit -m &quot;Finishing place-my-order&quot;
 git push origin master
 </code></pre>
@@ -2239,44 +2264,74 @@ git commit -m &quot;Deploying to Heroku&quot;
 </code></pre>
 <h3>Continuous Deployment</h3>
 <p>Previously we set up Travis CI <a href="#continuous-integration">for automated testing</a> of our application code as we developed, but Travis (and other CI solutions) can also be used to deploy our code to production once tests have passed.</p>
-<p>Open your <code>.travis.yml</code> file and add <code>before_deploy</code> and <code>deploy</code> keys that look like this:</p>
+<p>In order to deploy to Heroku you need to provide Travis with your Heroku API key. Sensitive information in our <code>.travis.yml</code> should always be encrypted, and the generator takes care of encrypting the API key using the <a href="https://www.npmjs.com/package/travis-encrypt">travis-encrypt</a> module.</p>
+<p><em>Note: if using Windows, first install the OpenSSL package as described in the <a href="https://donejs.com/SettingUp.html">Setting Up</a> guide.</em></p>
+<p>Run the <a href="https://github.com/donejs/donejs-travis-deploy-to-heroku">donejs-travis-deploy-to-heroku</a> generator like this:</p>
+<pre><code class="language-shell">donejs add travis-deploy-to-heroku
+</code></pre>
+<p>When prompted, confirm each prompt by pressing the Enter key (or enter new values if needed) and then confirm the changes made to the <code>.travis.yml</code> file.</p>
+<p>The updated <code>.travis.yml</code> should look like this:</p>
 <pre><code class="language-yaml">language: node_js
 node_js: node
+addons:
+  firefox: latest
 before_install:
-  - &quot;export DISPLAY=:99.0&quot;
-  - &quot;sh -e /etc/init.d/xvfb start&quot;
-before_deploy:
-  - &quot;git config --global user.email \&quot;me@example.com\&quot;&quot;
-  - &quot;git config --global user.name \&quot;PMO deploy bot\&quot;&quot;
-  - &quot;node build&quot;
-  - &quot;git add dist/ --force&quot;
-  - &quot;git commit -m \&quot;Updating build.\&quot;&quot;
-  - &quot;npm run deploy:ci&quot;
+  - 'export DISPLAY=:99.0'
+  - sh -e /etc/init.d/xvfb start
 deploy:
   skip_cleanup: true
-  provider: &quot;heroku&quot;
-  app: &lt;my-app&gt;
+  provider: heroku
+  app: &lt;heroku-appname&gt;
+  api_key: &lt;encrypted-heroku-api-key&gt;
+before_deploy:
+  - git config --global user.email &quot;me@example.com&quot;
+  - git config --global user.name &quot;deploy bot&quot;
+  - node build
+  - git add dist/ --force
+  - git commit -m &quot;Updating build.&quot;
 </code></pre>
-<p><span line-highlight='6-16,only'></span>
-You can find the name of the app by running <code>heroku apps:info</code>.</p>
-<p>In order to deploy to Heroku you need to provide Travis with your Heroku API key. Sensitive information in our <code>.travis.yml</code> should always be encrypted for which we install the <a href="https://www.npmjs.com/package/travis-encrypt">travis-encrypt</a> module:</p>
-<p><em>Note: if using Windows, first install the OpenSSL package as described in the <a href="https://donejs.com/SettingUp.html">Setting Up</a> guide.</em></p>
-<pre><code class="language-shell">npm install travis-encrypt -g
-</code></pre>
-<p>Now we can get the Heroku authentication token with:</p>
-<pre><code class="language-shell">heroku auth:token
-</code></pre>
-<p>Copy the token printed and paste it as <code>&lt;token&gt;</code> in the following command:</p>
-<pre><code class="language-shell">travis-encrypt --add deploy.api_key -r &lt;your-username&gt;/place-my-order &lt;token&gt;
-</code></pre>
-<p>Replace <code>&lt;your-username&gt;</code> with the name of your GitHub account.</p>
-<p>To automate the deploy to Firebase you need to provide the Firebase CI token. You can get the token by running:</p>
+<p><span line-highlight='8-18,only'></span></p>
+<blockquote>
+<p>The <code>donejs-travis-deploy-to-heroku</code> generator retrieves data from local configuration files, if any of the values set as default is incorrect, you can enter the correct value when prompted. To find the name of the Heroku application run <code>heroku apps:info</code>; or run <code>heroku auth:token</code> if you want to see your authentication token.</p>
+</blockquote>
+<p>Next, we set up Travis CI to deploy to <a href="https://www.firebase.com/">Firebase</a> as well. To automate the deploy to Firebase you need to provide the Firebase CI token. You can get the token by running:</p>
 <pre><code class="language-shell">node_modules/.bin/firebase login:ci
 </code></pre>
-<p>In the application folder. It will open a browser window and ask you to authorize the application. Once successful, copy the token and use it as the <code>&lt;token&gt;</code> in the following command:</p>
-<pre><code class="language-shell">travis-encrypt --add -r &lt;your-username&gt;/place-my-order 'FIREBASE_TOKEN=&quot;&lt;token&gt;&quot;'
+<p>In the application folder. It will open a browser window and ask you to authorize the application. Once successful, copy the token and enter it when prompted by the <a href="https://github.com/donejs/donejs-travis-deploy-to-firebase">travis-deploy-to-firebase</a> generator.</p>
+<p>Run the following command:</p>
+<pre><code class="language-shell">donejs add travis-deploy-to-firebase
 </code></pre>
-<p>Now any time a build succeeds when pushing to <code>master</code> the application will be deployed to Heroku and static assets to Firebase's CDN.</p>
+<p>Confirm your GitHub username and application name, then enter the Firebase CI Token from the previous step:</p>
+<pre><code class="language-shell">? What's your GitHub username? &lt;your-username&gt;
+? What's your GitHub application name? place-my-order
+? What's your Firebase CI Token? &lt;your-firebase-ci-token&gt;
+</code></pre>
+<p>And press the Enter key to update the <code>.travis.yml</code> file which should now look like this:</p>
+<pre><code class="language-yaml">language: node_js
+node_js: node
+addons:
+  firefox: latest
+before_install:
+  - 'export DISPLAY=:99.0'
+  - sh -e /etc/init.d/xvfb start
+deploy:
+  skip_cleanup: true
+  provider: heroku
+  app: &lt;heroku-appname&gt;
+  api_key: &lt;encrypted-heroku-api-key&gt;
+before_deploy:
+  - git config --global user.email &quot;me@example.com&quot;
+  - git config --global user.name &quot;deploy bot&quot;
+  - node build
+  - git add dist/ --force
+  - git commit -m &quot;Updating build.&quot;
+  - 'npm run deploy:ci'
+env:
+  global:
+    - secure: &lt;encrypted-firebase-ci-token&gt;
+</code></pre>
+<p><span line-highlight='19-22,only'></span>
+Now any time a build succeeds when pushing to <code>master</code> the application will be deployed to Heroku and static assets to Firebase's CDN.</p>
 <p>To test this out checkout a new branch:</p>
 <pre><code class="language-shell">git checkout -b continuous
 git add -A
