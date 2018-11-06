@@ -876,7 +876,7 @@ Weâ€™ll be building an iOS app if you are a Mac user, and an Android app if youâ
 <p>We will use these tools to create an iOS application that can be tested in the iOS simulator.</p>
 <p>Windows users should install the <a href="https://developer.android.com/sdk/index.html">Android Studio</a>, which gives all of the tools we need.</p>
 <p>Now we can install the DoneJS Cordova tools with:</p>
-<pre><code class="language-shell">donejs add cordova@1
+<pre><code class="language-shell">donejs add cordova@2
 </code></pre>
 <p>Depending on your operating system you can accept most of the defaults, unless you would like to build for Android, which needs to be selected from the list of platforms.</p>
 <p>To run the Cordova build and launch the simulator we can now run:</p>
@@ -888,7 +888,7 @@ Weâ€™ll be building an iOS app if you are a Mac user, and an Android app if youâ
 <p><strong>Note:</strong> if you receive the error <code>Error: Cannot read property 'replace' of undefined</code>, you can work around it by running <code>cd build/cordova/platforms/ios/cordova/ &amp;&amp; npm install ios-sim@6</code> until <a href="https://git-wip-us.apache.org/repos/asf?p=cordova-ios.git;a=commit;h=4490abf273ec6d12810c8ff5ea16d197c58ecd4b">this patch</a> is released.</p>
 <h3>Electron</h3>
 <p>To set up the desktop build, we have to add it to our application like this:</p>
-<pre><code class="language-shell">donejs add electron@1
+<pre><code class="language-shell">donejs add electron@2
 </code></pre>
 <p>Accept the default for all of the prompts.</p>
 <p><img src="static/img/donejs-electron-prompt.png" alt="electron prompt" style="box-shadow: 2px 2px 2px 1px rgba(0, 0, 0, 0.2); border-radius: 5px; border: 1px #E7E7E7 solid;" /></p>
