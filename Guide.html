@@ -407,8 +407,8 @@ const AppViewModel = DefineMap.extend({
   pageComponentModuleName: {
     get() {
       switch (this.routeData.page) {
-        case 'chat': return '~/messages/';
-        default: return '~/home.component';
+        case 'chat': return '~/pages/messages/';
+        default: return '~/pages/home.component';
       }
     }
   },
@@ -428,7 +428,7 @@ route.register(&quot;{page}&quot;, { page: &quot;home&quot; });
 export default AppViewModel;
 
 </code></pre>
-<p><span line-highlight='21-36,only'></span>
+<p><span line-highlight='20-36,only'></span>
 This imports the chosen page's module and then instantiates a new instance using <code>new Component()</code>. We can use this component by placing it in the <code>index.stache</code>:</p>
 <pre><code class="language-html">&lt;html&gt;
   &lt;head&gt;
@@ -580,7 +580,7 @@ in your <em>package.json</em>’s &quot;steal&quot; property is available, inclu
 <pre><code class="language-js">import { Component } from 'can';
 import './messages.less';
 import view from './messages.stache';
-import Message from '../models/message';
+import Message from '../../models/message';
 
 export default Component.extend({
   tag: 'chat-messages',
