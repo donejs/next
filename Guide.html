@@ -394,7 +394,7 @@ if(debug) {
 }
 //!steal-remove-end
 
-const AppViewModel = DefineMap.extend({
+const AppViewModel = DefineMap.extend(&quot;AppViewModel&quot;, {
   env: {
     default: () =&gt; ({NODE_ENV:'development'})
   },
