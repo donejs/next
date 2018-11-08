@@ -1394,13 +1394,12 @@ git pull origin master
 <pre><code class="language-js">route.register('{page}/{slug}', { slug: null });
 route.register('{page}/{slug}/{action}', { slug: null, action: null });
 </code></pre>
-<p>We want to use those routes when we are in the <code>restaurants</code> page. The relevant section in <code>src/index.stache</code> currently looks like this:</p>
-<pre><code class="language-html">{{#case &quot;restaurants&quot;}}
-  &lt;can-import from=&quot;src/restaurant/list/&quot;
-      can-tag=&quot;pmo-loading&quot;&gt;
-    &lt;pmo-restaurant-list/&gt;
-  &lt;/can-import&gt;
-{{/case}}
+<p>We want to use those routes when we are in the <code>restaurants</code> page. The relevant section in <code>pageComponent</code> currently looks like this:</p>
+<pre><code class="language-js">case 'restaurants': {
+  return steal.import('~/pages/restaurant/list/').then(({default: RestaurantList}) =&gt; {
+    return new RestaurantList();
+  });
+}
 </code></pre>
 <p>We want to support two additional routes:</p>
 <ul>
@@ -1409,27 +1408,33 @@ route.register('{page}/{slug}/{action}', { slug: null, action: null });
 </ul>
 <h3>Create additional components</h3>
 <p>To make this happen, we need two more components. First, the <code>pmo-restaurant-details</code> component which loads the restaurant (based on the <code>slug</code>) and displays its information.</p>
-<pre><code class="language-shell">donejs add component restaurant/details.component pmo-restaurant-details
+<pre><code class="language-shell">donejs add component pages/restaurant/details.component pmo-restaurant-details
 </code></pre>
-<p>And change <code>src/restaurant/details.component</code> to:</p>
+<p>And change <code>src/pages/restaurant/details.component</code> to:</p>
 <pre><code class="language-html">&lt;can-component tag=&quot;pmo-restaurant-details&quot;&gt;
+  &lt;style type=&quot;less&quot;&gt;
+    display: block;
+
+    p { font-weight: bold; }
+  &lt;/style&gt;
   &lt;view&gt;
     &lt;can-import from=&quot;~/models/restaurant&quot; /&gt;
     &lt;can-import from=&quot;can-stache-route-helpers&quot; /&gt;
-    {{#if(restaurantPromise.isPending)}}
+    {{#if(this.restaurantPromise.isPending)}}
       &lt;div class=&quot;loading&quot;&gt;&lt;/div&gt;
     {{else}}
-      {{#restaurantPromise.value}}
+      {{let restaurant=this.restaurantPromise.value}}
       &lt;div class=&quot;restaurant-header&quot;
-          style=&quot;background-image: url({{joinBase(images.banner)}});&quot;&gt;
+          style=&quot;background-image: url({{joinBase(restaurant.images.banner)}});&quot;&gt;
         &lt;div class=&quot;background&quot;&gt;
-          &lt;h2&gt;{{name}}&lt;/h2&gt;
+          &lt;h2&gt;{{restaurant.name}}&lt;/h2&gt;
 
-          {{#address}}
+          {{let addr=restaurant.address}}
+          {{#if(addr)}}
           &lt;div class=&quot;address&quot;&gt;
-            {{street}}&lt;br /&gt;{{city}}, {{state}} {{zip}}
+            {{addr.street}}&lt;br /&gt;{{addr.city}}, {{addr.state}} {{addr.zip}}
           &lt;/div&gt;
-          {{/address}}
+          {{/if}}
 
           &lt;div class=&quot;hours-price&quot;&gt;
             $$$&lt;br /&gt;
@@ -1445,25 +1450,45 @@ route.register('{page}/{slug}/{action}', { slug: null, action: null });
         &lt;h3&gt;The best food this side of the Mississippi&lt;/h3&gt;
 
         &lt;p class=&quot;description&quot;&gt;
-          &lt;img src=&quot;{{joinBase(images.owner)}}&quot; /&gt;
-          Description for {{name}}
+          &lt;img src=&quot;{{joinBase(restaurant.images.owner)}}&quot; /&gt;
+          Description for {{restaurant.name}}
         &lt;/p&gt;
         &lt;p class=&quot;order-link&quot;&gt;
-          &lt;a class=&quot;btn&quot; href=&quot;{{routeUrl(page='restaurants' slug=slug action='order')}}&quot;&gt;
-            Order from {{name}}
+          &lt;a class=&quot;btn&quot; href=&quot;{{routeUrl(page='restaurants' slug=restaurant.slug action='order')}}&quot;&gt;
+            Order from {{restaurant.name}}
           &lt;/a&gt;
         &lt;/p&gt;
       &lt;/div&gt;
-      {{/restaurantPromise.value}}
     {{/if}}
   &lt;/view&gt;
   &lt;script type=&quot;view-model&quot;&gt;
-    import DefineMap from 'can-define/map/';
-    import Restaurant from '~/models/restaurant';
+    import { DefineMap } from 'can';
 
-    export default DefineMap.extend({
+    export default DefineMap.extend(&quot;PmoRestaurantDetailsVM&quot;, {
+      // EXTERNAL STATEFUL PROPERTIES
+      // These properties are passed from another component. Example:
+      // value: {type: &quot;number&quot;}
+
+      // INTERNAL STATEFUL PROPERTIES
+      // These properties are owned by this component.
+      message: { default: &quot;This is the pmo-restaurant-details component&quot; },
+
+      // DERIVED PROPERTIES
+      // These properties combine other property values. Example:
+      // get valueAndMessage(){ return this.value + this.message; }
       get restaurantPromise() {
         return Restaurant.get({ _id: this.slug });
+      },
+
+      // METHODS
+      // Functions that can be called by the view. Example:
+      // incrementValue() { this.value++; }
+
+      // SIDE EFFECTS
+      // The following is a good place to perform changes to the DOM
+      // or do things that don't fit in to one of the areas above.
+      connectedCallback(element){
+
       }
     });
   &lt;/script&gt;
@@ -1471,57 +1496,105 @@ route.register('{page}/{slug}/{action}', { slug: null, action: null });
 
 </code></pre>
 <p>The order component will be a little more complex, which is why we will put it into its own folder:</p>
-<pre><code class="language-shell">donejs add component order/new pmo-order-new
+<pre><code class="language-shell">donejs add component pages/order/new pmo-order-new
 </code></pre>
 <p>For now, we will just use placeholder content and implement the functionality in
 the following chapters.</p>
-<h3>Add to the main template</h3>
-<p>Now we can add those components to the main template (at <code>src/index.stache</code>) with conditions based on the routes that we want to match. Change the section which contains:</p>
-<pre><code class="language-html">{{#case &quot;restaurants&quot;}}
-  &lt;can-import from=&quot;place-my-order/restaurant/list/&quot;
-      can-tag=&quot;pmo-loading&quot;&gt;
-    &lt;pmo-restaurant-list/&gt;
-  &lt;/can-import&gt;
-{{/case}}
-</code></pre>
-<p>To:</p>
-<pre><code class="language-html">{{#case(&quot;restaurants&quot;)}}
-  {{#if(slug)}}
-    {{#switch action}}
-      {{#case 'order'}}
-        &lt;can-import from=&quot;~/order/new/&quot;
-            can-tag=&quot;pmo-loading&quot;&gt;
-          &lt;pmo-order-new slug:from=&quot;slug&quot;/&gt;
-        &lt;/can-import&gt;
-      {{/case}}
+<h3>Add to the Application ViewModel routing</h3>
+<p>Now we can add those components to the <code>pageComponent</code> property (at <code>src/app.js</code>) with conditions based on the routes that we want to match. Update <code>src/app.js</code> with:</p>
+<pre><code class="language-js">import { DefineMap, route, value } from 'can';
+import RoutePushstate from 'can-route-pushstate';
+import debug from 'can-debug#?./is-dev';
 
-      {{#default}}
-        &lt;can-import from=&quot;~/restaurant/details.component&quot;
-            can-tag=&quot;pmo-loading&quot;&gt;
-          &lt;pmo-restaurant-details slug:from=&quot;slug&quot;/&gt;
-        &lt;/can-import&gt;
-      {{/default}}
-    {{/switch}}
-  {{else}}
-    &lt;can-import from=&quot;~/restaurant/list/&quot;
-        can-tag=&quot;pmo-loading&quot;&gt;
-      &lt;pmo-restaurant-list/&gt;
-    &lt;/can-import&gt;
-  {{/if}}
-{{/case}}
+//!steal-remove-start
+if(debug) {
+    debug();
+}
+//!steal-remove-end
+
+const AppViewModel = DefineMap.extend({
+  page: 'string',
+  slug: 'string',
+  action: 'string',
+  env: {
+    default: () =&gt; ({NODE_ENV:'development'})
+  },
+  title: {
+    default: 'place-my-order'
+  },
+  routeData: {
+    default: () =&gt; route.data
+    },
+  get pageComponent() {
+    switch(this.routeData.page) {
+      case 'home': {
+        return steal.import('~/pages/home.component').then(({default: Home}) =&gt; {
+          return new Home();
+        });
+      }
+
+      case 'restaurants': {
+        if(this.routeData.slug) {
+          switch(this.routeData.action) {
+            case 'order': {
+              return steal.import(&quot;~/pages/order/new/&quot;)
+              .then(({default: OrderNew}) =&gt; {
+                return new OrderNew({
+                  viewModel: {
+                    slug: value.from(this.routeData, &quot;slug&quot;)
+                  }
+                })
+              });
+            }
+
+            default: {
+              return steal.import(&quot;~/pages/restaurant/details.component&quot;)
+              .then(({default: RestaurantDetail}) =&gt; {
+                return new RestaurantDetail({
+                  viewModel: {
+                    slug: value.from(this.routeData, &quot;slug&quot;)
+                  }
+                });
+              });
+            }
+          }
+        }
+
+        return steal.import('~/pages/restaurant/list/').then(({default: RestaurantList}) =&gt; {
+          return new RestaurantList();
+        });
+      }
+
+      case 'order-history': {
+        return steal.import('~/pages/order/history.component').then(({default: OrderHistory}) =&gt; {
+          return new OrderHistory();
+        });
+      }
+    }
+  }
+});
+
+route.urlData = new RoutePushstate();
+route.register(&quot;{page}&quot;, { page: &quot;home&quot; });
+route.register('{page}/{slug}', { slug: null });
+route.register('{page}/{slug}/{action}', { slug: null, action: null });
+
+export default AppViewModel;
 
 </code></pre>
-<p>Here we are adding some more conditions if <code>page</code> is set to <code>restaurants</code>:</p>
+<p><span line-highlight='1,33-57,only'></span>
+Here we are adding some more conditions if <code>page</code> is set to <code>restaurants</code>:</p>
 <ul>
 <li>When there is no <code>slug</code> set, show the original restaurant list</li>
 <li>When <code>slug</code> is set but no <code>action</code>, show the restaurant details</li>
 <li>When <code>slug</code> is set and <code>action</code> is <code>order</code>, show the order component for that restaurant</li>
 </ul>
+<p>As before, we import the page component based on the state of the route. Since the page component is a class, we can call <code>new</code> to create a new instance. Then we use <a href="https://canjs.com/doc/can-value.from.html">can-value</a> to bind the <code>slug</code> from the route to the component.</p>
 <h2>Importing other projects</h2>
 <p>The npm integration of StealJS makes it very easy to share and import other components. One thing we want to do when showing the <code>pmo-order-new</code> component is have a tab to choose between the lunch and dinner menu. The good news is that there is already a <a href="https://github.com/bitovi-components/bit-tabs">bit-tabs</a> component which does exactly that. Let's add it as a project dependency with:</p>
 <pre><code class="language-shell">npm install bit-tabs@2 --save
 </code></pre>
-<p>And then integrate it into <code>src/order/new/new.stache</code>:</p>
+<p>And then integrate it into <code>src/pages/order/new/new.stache</code>:</p>
 <pre><code class="language-html">&lt;can-import from=&quot;bit-tabs/unstyled&quot;/&gt;
 &lt;div class=&quot;order-form&quot;&gt;
   &lt;h2&gt;Order here&lt;/h2&gt;
@@ -1593,10 +1666,7 @@ the following chapters.</p>
 <pre><code class="language-shell">donejs add supermodel order
 </code></pre>
 <p>Like the restaurant model, the URL is <code>/api/orders</code> and the id property is <code>_id</code>. To select menu items, we need to add some additional functionality to <code>src/models/order.js</code>:</p>
-<pre><code class="language-js">import DefineMap from 'can-define/map/';
-import DefineList from 'can-define/list/';
-import set from 'can-set';
-import superMap from 'can-connect/can/super-map/';
+<pre><code class="language-js">import { DefineMap, DefineList, superModel } from 'can';
 import loader from '@loader';
 
 const Item = DefineMap.extend({
@@ -1626,7 +1696,10 @@ const ItemsList = DefineList.extend({
 const Order = DefineMap.extend({
   seal: false
 }, {
-  '_id': '*',
+  '_id': {
+    type: 'any',
+    identity: true
+  },
   name: 'string',
   address: 'string',
   phone: 'string',
@@ -1654,76 +1727,92 @@ Order.List = DefineList.extend({
   '#': Order
 });
 
-const algebra = new set.Algebra(
-  set.props.id('_id')
-);
-
-Order.connection = superMap({
+Order.connection = superModel({
   url: loader.serviceBaseURL + '/api/orders',
   Map: Order,
   List: Order.List,
-  name: 'order',
-  algebra
+  name: 'order'
 });
 
 export default Order;
 
 </code></pre>
-<p><span line-highlight='7-29,34-55,only'></span>
+<p><span line-highlight='4-26,34-55,only'></span>
 Here we define an <code>ItemsList</code> which allows us to toggle menu items and check if they are already in the order. We set up ItemsList as the Value of the items property of an order so we can use its has function and toggle directly in the template. We also set a default value for status and a getter for calculating the order total which adds up all the item prices. We also create another <code>&lt;order-model&gt;</code> tag to load orders in the order history template later.</p>
 <h3>Implement the view model</h3>
-<p>Now we can update the view model in <code>src/order/new/new.js</code>:</p>
-<pre><code class="language-js">import Component from 'can-component';
-import DefineMap from 'can-define/map/';
+<p>Now we can update the view model in <code>src/pages/order/new/new.js</code>:</p>
+<pre><code class="language-js">import { Component } from 'can';
 import './new.less';
 import view from './new.stache';
 import Restaurant from '~/models/restaurant';
 import Order from '~/models/order';
 
-export const ViewModel = DefineMap.extend({
-  slug: 'string',
-  saveStatus: '*',
-  order: {
-    Default: Order
-  },
-  get restaurantPromise() {
-    return Restaurant.get({ _id: this.slug });
-  },
-  restaurant: {
-    get(lastSetVal, resolve) {
-      this.restaurantPromise.then(resolve);
+export const PmoOrderNew = Component.extend({
+  tag: 'pmo-order-new',
+  view,
+  ViewModel: {
+    // EXTERNAL STATEFUL PROPERTIES
+    // These properties are passed from another component. Example:
+    // value: {type: &quot;number&quot;}
+    slug: 'string',
+
+    // INTERNAL STATEFUL PROPERTIES
+    // These properties are owned by this component.
+    saveStatus: '*',
+    order: {
+      Default: Order
+    },
+    get restaurantPromise() {
+      return Restaurant.get({ _id: this.slug });
+    },
+    restaurant: {
+      get(lastSetVal, resolve) {
+        this.restaurantPromise.then(resolve);
+      }
+    },
+    get canPlaceOrder() {
+      return this.order.items.length;
+    },
+
+    // DERIVED PROPERTIES
+    // These properties combine other property values. Example:
+    // get valueAndMessage(){ return this.value + this.message; }
+
+    // METHODS
+    // Functions that can be called by the view. Example:
+    // incrementValue() { this.value++; }
+    placeOrder(ev) {
+      ev.preventDefault();
+      let order = this.order;
+      order.restaurant = this.restaurant._id;
+      this.saveStatus = order.save();
+    },
+    startNewOrder() {
+      this.order = new Order();
+      this.saveStatus = null;
+    },
+
+    // SIDE EFFECTS
+    // The following is a good place to perform changes to the DOM
+    // or do things that don't fit in to one of the areas above.
+    connectedCallback(element){
+
     }
-  },
-  get canPlaceOrder() {
-    return this.order.items.length;
-  },
-  placeOrder(ev) {
-    ev.preventDefault();
-    let order = this.order;
-    order.restaurant = this.restaurant._id;
-    this.saveStatus = order.save();
-  },
-  startNewOrder() {
-    this.order = new Order();
-    this.saveStatus = null;
   }
 });
 
-export default Component.extend({
-  tag: 'pmo-order-new',
-  ViewModel,
-  view
-});
+export default PmoOrderNew;
+export const ViewModel = PmoOrderNew.ViewModel;
 
 </code></pre>
-<p><span line-highlight='5-6,9-34,only'></span>
+<p><span line-highlight='4-5,14,18-32,41-50,only'></span>
 Here we just define the properties that we need: <code>slug</code>, <code>order</code>, <code>canPlaceOrder</code> - which we will use to enable/disable the submit button - and <code>saveStatus</code>, which will become a promise once the order is submitted. <code>placeOrder</code> updates the order with the restaurant information and saves the current order. <code>startNewOrder</code> allows us to submit another order.</p>
-<p>While we're here we can also update our test to get it passing again, replace <code>src/order/new/new-test.js</code> with:</p>
+<p>While we're here we can also update our test to get it passing again, replace <code>src/pages/order/new/new-test.js</code> with:</p>
 <pre><code class="language-js">import QUnit from 'steal-qunit';
 import { ViewModel } from './new';
 
 // ViewModel unit tests
-QUnit.module('~/order/new');
+QUnit.module('~/pages/order/new');
 
 QUnit.test('canPlaceOrder', function(){
   var vm = new ViewModel({
@@ -1736,96 +1825,125 @@ QUnit.test('canPlaceOrder', function(){
 <p><span line-highlight='7-12,only'></span></p>
 <h3>Write the template</h3>
 <p>First, let's implement a small order confirmation component with</p>
-<pre><code class="language-shell">donejs add component order/details.component pmo-order-details
+<pre><code class="language-shell">donejs add component components/order/details.component pmo-order-details
 </code></pre>
-<p>and changing <code>src/order/details.component</code> to:</p>
+<p>and changing <code>src/components/order/details.component</code> to:</p>
 <pre><code class="language-html">&lt;can-component tag=&quot;pmo-order-details&quot;&gt;
   &lt;view&gt;
-    {{#order}}
-      &lt;h3&gt;Thanks for your order {{name}}!&lt;/h3&gt;
+    {{#if(this.order)}}
+      &lt;h3&gt;Thanks for your order {{this.order.name}}!&lt;/h3&gt;
       &lt;div&gt;&lt;label class=&quot;control-label&quot;&gt;
-        Confirmation Number: {{_id}}&lt;/label&gt;
+        Confirmation Number: {{this.order._id}}&lt;/label&gt;
       &lt;/div&gt;
 
       &lt;h4&gt;Items ordered:&lt;/h4&gt;
       &lt;ul class=&quot;list-group panel&quot;&gt;
-        {{#each(items)}}
+        {{#for(item of this.order.items)}}
           &lt;li class=&quot;list-group-item&quot;&gt;
             &lt;label&gt;
-              {{name}} &lt;span class=&quot;badge&quot;&gt;${{price}}&lt;/span&gt;
+              {{item.name}} &lt;span class=&quot;badge&quot;&gt;${{item.price}}&lt;/span&gt;
             &lt;/label&gt;
           &lt;/li&gt;
-        {{/each}}
+        {{/for}}
 
         &lt;li class=&quot;list-group-item&quot;&gt;
           &lt;label&gt;
-            Total &lt;span class=&quot;badge&quot;&gt;${{total}}&lt;/span&gt;
+            Total &lt;span class=&quot;badge&quot;&gt;${{this.order.total}}&lt;/span&gt;
           &lt;/label&gt;
         &lt;/li&gt;
       &lt;/ul&gt;
 
       &lt;div&gt;&lt;label class=&quot;control-label&quot;&gt;
-        Phone: {{phone}}
+        Phone: {{this.order.phone}}
       &lt;/label&gt;&lt;/div&gt;
       &lt;div&gt;&lt;label class=&quot;control-label&quot;&gt;
-        Address: {{address}}
+        Address: {{this.order.address}}
       &lt;/label&gt;&lt;/div&gt;
-    {{/order}}
+    {{/if}}
   &lt;/view&gt;
+  &lt;script type=&quot;view-model&quot;&gt;
+    import { DefineMap } from 'can';
+
+    export default DefineMap.extend(&quot;PmoOrderDetailsVM&quot;, {
+      // EXTERNAL STATEFUL PROPERTIES
+      // These properties are passed from another component. Example:
+      // value: {type: &quot;number&quot;}
+      order: &quot;any&quot;,
+
+      // INTERNAL STATEFUL PROPERTIES
+      // These properties are owned by this component.
+      message: { default: &quot;This is the pmo-order-details component&quot; },
+
+      // DERIVED PROPERTIES
+      // These properties combine other property values. Example:
+      // get valueAndMessage(){ return this.value + this.message; }
+
+      // METHODS
+      // Functions that can be called by the view. Example:
+      // incrementValue() { this.value++; }
+
+      // SIDE EFFECTS
+      // The following is a good place to perform changes to the DOM
+      // or do things that don't fit in to one of the areas above.
+      connectedCallback(element){
+
+      }
+    });
+  &lt;/script&gt;
 &lt;/can-component&gt;
 
 </code></pre>
-<p>Now we can import that component and update <code>src/order/new/new.stache</code> to:</p>
-<pre><code class="language-html">&lt;can-import from=&quot;bit-tabs/unstyled&quot; /&gt;
-&lt;can-import from=&quot;~/order/details.component&quot; /&gt;
+<p>Now we can import that component and update <code>src/pages/order/new/new.stache</code> to:</p>
+<pre><code class="language-html">&lt;can-import from=&quot;bit-tabs/unstyled&quot;/&gt;
+&lt;can-import from=&quot;~/components/order/details.component&quot; /&gt;
 
 &lt;div class=&quot;order-form&quot;&gt;
-  {{#if(restaurantPromise.isPending)}}
+  {{#if(this.restaurantPromise.isPending)}}
     &lt;div class=&quot;loading&quot;&gt;&lt;/div&gt;
   {{else}}
-    {{#if(saveStatus.isResolved)}}
-      &lt;pmo-order-details order:from=&quot;saveStatus.value&quot;&gt;&lt;/pmo-order-details&gt;
-      &lt;p&gt;&lt;a href=&quot;javascript://&quot; on:click=&quot;startNewOrder()&quot;&gt;
+    {{#if(this.saveStatus.isResolved)}}
+      &lt;pmo-order-details order:from=&quot;this.saveStatus.value&quot;&gt;&lt;/pmo-order-details&gt;
+      &lt;p&gt;&lt;a href=&quot;javascript://&quot; on:click=&quot;this.startNewOrder()&quot;&gt;
         Place another order
       &lt;/a&gt;&lt;/p&gt;
     {{else}}
-      &lt;h3&gt;Order from {{restaurant.name}}&lt;/h3&gt;
+      &lt;h3&gt;Order from {{this.restaurant.name}}&lt;/h3&gt;
 
-      &lt;form on:submit=&quot;placeOrder(scope.event)&quot;&gt;
+      &lt;form on:submit=&quot;this.placeOrder(scope.event)&quot;&gt;
         &lt;bit-tabs tabsClass:raw=&quot;nav nav-tabs&quot;&gt;
-          &lt;p class=&quot;info {{^if(order.items.length)}}text-error{{else}}text-success{{/if}}&quot;&gt;
-            {{^if(order.items.length)}}
+          &lt;p class=&quot;info {{^if(this.order.items.length)}}text-error{{else}}text-success{{/if}}&quot;&gt;
+            {{^if(this.order.items.length)}}
               Please choose an item
             {{else}}
-              {{order.items.length}} selected
+              {{this.order.items.length}} selected
             {{/if}}
           &lt;/p&gt;
           &lt;bit-panel title:raw=&quot;Lunch menu&quot;&gt;
             &lt;ul class=&quot;list-group&quot;&gt;
-              {{#each(restaurant.menu.lunch)}}
+              {{#for(item of this.restaurant.menu.lunch)}}
                 &lt;li class=&quot;list-group-item&quot;&gt;
                   &lt;label&gt;
                     &lt;input type=&quot;checkbox&quot;
-                      on:change=&quot;order.items.toggle(.)&quot;
-                      {{#if(order.items.has(.))}}checked{{/if}}&gt;
-                    {{name}} &lt;span class=&quot;badge&quot;&gt;${{price}}&lt;/span&gt;
+                      on:change=&quot;this.order.items.toggle(item)&quot;
+                      {{#if(this.order.items.has(item))}}checked{{/if}}&gt;
+                    {{item.name}} &lt;span class=&quot;badge&quot;&gt;${{item.price}}&lt;/span&gt;
                   &lt;/label&gt;
                 &lt;/li&gt;
-              {{/each}}
+              {{/for}}
             &lt;/ul&gt;
           &lt;/bit-panel&gt;
           &lt;bit-panel title:raw=&quot;Dinner menu&quot;&gt;
             &lt;ul class=&quot;list-group&quot;&gt;
-              {{#each(restaurant.menu.dinner)}}
+              {{#for(item of restaurant.menu.dinner)}}
                 &lt;li class=&quot;list-group-item&quot;&gt;
                   &lt;label&gt;
                     &lt;input type=&quot;checkbox&quot;
-                      on:change=&quot;order.items.toggle(this)&quot;
-                      {{#if(order.items.has(.))}}checked{{/if}}&gt;
-                    {{name}} &lt;span class=&quot;badge&quot;&gt;${{price}}&lt;/span&gt;
+                      on:change=&quot;this.order.items.toggle(item)&quot;
+                      {{#if(this.order.items.has(item))}}checked{{/if}}&gt;
+                    {{item.name}} &lt;span class=&quot;badge&quot;&gt;${{item.price}}&lt;/span&gt;
                   &lt;/label&gt;
                 &lt;/li&gt;
-              {{/each}}
+              {{/for}}
             &lt;/ul&gt;
           &lt;/bit-panel&gt;
         &lt;/bit-tabs&gt;
@@ -1833,28 +1951,28 @@ QUnit.test('canPlaceOrder', function(){
         &lt;div class=&quot;form-group&quot;&gt;
           &lt;label class=&quot;control-label&quot;&gt;Name:&lt;/label&gt;
           &lt;input name=&quot;name&quot; type=&quot;text&quot; class=&quot;form-control&quot;
-            value:bind=&quot;order.name&quot;&gt;
+            value:bind=&quot;this.order.name&quot;&gt;
           &lt;p&gt;Please enter your name.&lt;/p&gt;
         &lt;/div&gt;
         &lt;div class=&quot;form-group&quot;&gt;
           &lt;label class=&quot;control-label&quot;&gt;Address:&lt;/label&gt;
           &lt;input name=&quot;address&quot; type=&quot;text&quot; class=&quot;form-control&quot;
-            value:bind=&quot;order.address&quot;&gt;
+            value:bind=&quot;this.order.address&quot;&gt;
           &lt;p class=&quot;help-text&quot;&gt;Please enter your address.&lt;/p&gt;
         &lt;/div&gt;
         &lt;div class=&quot;form-group&quot;&gt;
           &lt;label class=&quot;control-label&quot;&gt;Phone:&lt;/label&gt;
           &lt;input name=&quot;phone&quot; type=&quot;text&quot; class=&quot;form-control&quot;
-            value:bind=&quot;order.phone&quot;&gt;
+            value:bind=&quot;this.order.phone&quot;&gt;
           &lt;p class=&quot;help-text&quot;&gt;Please enter your phone number.&lt;/p&gt;
         &lt;/div&gt;
         &lt;div class=&quot;submit&quot;&gt;
-          &lt;h4&gt;Total: ${{order.total}}&lt;/h4&gt;
-          {{#if(saveStatus.isPending)}}
+          &lt;h4&gt;Total: ${{this.order.total}}&lt;/h4&gt;
+          {{#if(this.saveStatus.isPending)}}
             &lt;div class=&quot;loading&quot;&gt;&lt;/div&gt;
           {{else}}
             &lt;button type=&quot;submit&quot;
-                {{^if(canPlaceOrder)}}disabled{{/if}} class=&quot;btn&quot;&gt;
+                {{^if(this.canPlaceOrder)}}disabled{{/if}} class=&quot;btn&quot;&gt;
               Place My Order!
             &lt;/button&gt;
           {{/if}}
@@ -1870,25 +1988,21 @@ QUnit.test('canPlaceOrder', function(){
 <li><code>&lt;can-import from=&quot;place-my-order/order/details.component&quot; /&gt;</code> loads the order details component we previously created</li>
 <li>If the <code>saveStatus</code> promise is resolved we show the <code>pmo-order-details</code> component with that order</li>
 <li>Otherwise we will show the order form with the <code>bit-tabs</code> panels we implemented in the previous chapter and iterate over each menu item</li>
-<li><code>on:submit=&quot;placeOrder()&quot;</code> will call <code>placeOrder</code> from our view model when the form is submitted</li>
-<li>The interesting part for showing a menu item is the checkbox <code>&lt;input type=&quot;checkbox&quot; on:change=&quot;order.items.toggle(.)&quot; {{#if order.items.has(.)}}checked{{/if}}&gt;</code>
+<li><code>on:submit=&quot;this.placeOrder()&quot;</code> will call <code>placeOrder</code> from our view model when the form is submitted</li>
+<li>The interesting part for showing a menu item is the checkbox <code>&lt;input type=&quot;checkbox&quot; on:change=&quot;this.order.items.toggle(item)&quot; {{#if this.order.items.has(item)}}checked{{/if}}&gt;</code>
 <ul>
-<li><code>on:change</code> binds to the checkbox change event and runs <code>order.items.toggle</code> which toggles the item from <code>ItemList</code>, which we created in the model</li>
-<li><code>order.item.has</code> sets the checked status to whether or not this item is in the order</li>
+<li><code>on:change</code> binds to the checkbox change event and runs <code>this.order.items.toggle</code> which toggles the item from <code>ItemList</code>, which we created in the model</li>
+<li><code>this.order.item.has</code> sets the checked status to whether or not this item is in the order</li>
 </ul></li>
 <li>Then we show form elements for name, address, and phone number, which are bound to the order model using <a href="https://canjs.com/doc/can-stache-bindings.html">can-stache-bindings</a></li>
-<li>Finally we disable the button with <code>{{^if canPlaceOrder}}disabled{{/if}}</code> which gets <code>canPlaceOrder</code> from the view model and returns false if no menu items are selected.</li>
+<li>Finally we disable the button with <code>{{^if(this.canPlaceOrder)}}disabled{{/if}}</code> which gets <code>canPlaceOrder</code> from the view model and returns false if no menu items are selected.</li>
 </ul>
 <h2>Set up a real-time connection</h2>
 <p>can-connect makes it very easy to implement real-time functionality. It is capable of listening to notifications from the server when server data has been created, updated, or removed. This is usually accomplished via <a href="https://en.wikipedia.org/wiki/WebSocket">websockets</a>, which allow sending push notifications to a client.</p>
-<h3>Add the order-model tag</h3>
-<p>Update <code>src/models/order.js</code> to use <a href="https://canjs.com/doc/can-connect/can/tag/tag.html">can-connect/can/tag/</a> so that the Order model can be used declaratively:</p>
-<pre><code class="language-js">import DefineMap from 'can-define/map/';
-import DefineList from 'can-define/list/';
-import set from 'can-set';
-import superMap from 'can-connect/can/super-map/';
+<h3>Add the Status enum type</h3>
+<p>Update <code>src/models/order.js</code> to use <a href="https://canjs.com/doc/can-query-logic.makeEnum.html">QueryLogic.makeEnum</a> so that we can declare all of the possible values for an order's <code>status</code>.</p>
+<pre><code class="language-js">import { DefineMap, DefineList, superModel, QueryLogic } from 'can';
 import loader from '@loader';
-import tag from 'can-connect/can/tag/';
 
 const Item = DefineMap.extend({
   seal: false
@@ -1914,17 +2028,23 @@ const ItemsList = DefineList.extend({
   }
 });
 
+const Status = QueryLogic.makeEnum([&quot;new&quot;, &quot;preparing&quot;, &quot;delivery&quot;, &quot;delivered&quot;]);
+
 const Order = DefineMap.extend({
   seal: false
 }, {
-  '_id': '*',
+  '_id': {
+    type: 'any',
+    identity: true
+  },
   name: 'string',
   address: 'string',
   phone: 'string',
   restaurant: 'string',
 
   status: {
-    default: 'new'
+    default: 'new',
+    Type: Status
   },
   items: {
     Default: ItemsList
@@ -1945,81 +2065,105 @@ Order.List = DefineList.extend({
   '#': Order
 });
 
-const algebra = new set.Algebra(
-  set.props.id('_id'),
-  set.comparators.enum(&quot;status&quot;, [&quot;new&quot;, &quot;preparing&quot;, &quot;delivery&quot;, &quot;delivered&quot;])
-);
-
-Order.connection = superMap({
+Order.connection = superModel({
   url: loader.serviceBaseURL + '/api/orders',
   Map: Order,
   List: Order.List,
-  name: 'order',
-  algebra
+  name: 'order'
 });
-
-tag('order-model', Order.connection);
 
 export default Order;
 
 </code></pre>
-<p><span line-highlight='6,65,76,only'></span>
-The model can now be used in the template like <code>&lt;order-model get-list=&quot;{status='new'}&quot;&gt;</code>. This also adds an <a href="https://canjs.com/doc/can-set.props.enum.html">enum comparator</a> so that multiple requests for different statuses can be combined.</p>
+<p><span line-highlight='1,28,43-44,only'></span></p>
 <h3>Update the template</h3>
 <p>First let's create the <code>pmo-order-list</code> component with:</p>
-<pre><code class="language-shell">donejs add component order/list.component pmo-order-list
+<pre><code class="language-shell">donejs add component components/order/list.component pmo-order-list
 </code></pre>
-<p>And then change <code>src/order/list.component</code> to:</p>
+<p>And then change <code>src/components/order/list.component</code> to:</p>
 <pre><code class="language-html">&lt;can-component tag=&quot;pmo-order-list&quot;&gt;
   &lt;view&gt;
-    &lt;h4&gt;{{listTitle}}&lt;/h4&gt;
+    &lt;h4&gt;{{this.listTitle}}&lt;/h4&gt;
 
-    {{#if(orders.isPending)}}
+    {{#if(this.orders.isPending)}}
      &lt;div class=&quot;loading&quot;&gt;&lt;/div&gt;
     {{else}}
-      {{#each(orders.value)}}
-      &lt;div class=&quot;order {{status}}&quot;&gt;
+      {{#for(order of this.orders.value)}}
+      &lt;div class=&quot;order {{order.status}}&quot;&gt;
         &lt;address&gt;
-          {{name}} &lt;br /&gt;{{address}} &lt;br /&gt;{{phone}}
+          {{order.name}} &lt;br /&gt;{{order.address}} &lt;br /&gt;{{order.phone}}
         &lt;/address&gt;
 
         &lt;div class=&quot;items&quot;&gt;
           &lt;ul&gt;
-            {{#each(items)}}&lt;li&gt;{{name}}&lt;/li&gt;{{/each}}
+            {{#for(item of order.items)}}&lt;li&gt;{{item.name}}&lt;/li&gt;{{/for}}
           &lt;/ul&gt;
         &lt;/div&gt;
 
-        &lt;div class=&quot;total&quot;&gt;${{total}}&lt;/div&gt;
+        &lt;div class=&quot;total&quot;&gt;${{order.total}}&lt;/div&gt;
 
         &lt;div class=&quot;actions&quot;&gt;
-          &lt;span class=&quot;badge&quot;&gt;{{statusTitle}}&lt;/span&gt;
-          {{#if(action)}}
+          &lt;span class=&quot;badge&quot;&gt;{{this.statusTitle}}&lt;/span&gt;
+          {{#if(this.action)}}
             &lt;p class=&quot;action&quot;&gt;
               Mark as:
-              &lt;a href=&quot;javascript://&quot; on:click=&quot;markAs(action)&quot;&gt;
-                {{actionTitle}}
+              &lt;a href=&quot;javascript://&quot; on:click=&quot;order.markAs(this.action)&quot;&gt;
+                {{this.actionTitle}}
               &lt;/a&gt;
             &lt;/p&gt;
           {{/if}}
 
           &lt;p class=&quot;action&quot;&gt;
-            &lt;a href=&quot;javascript://&quot;  on:click=&quot;destroy()&quot;&gt;Delete&lt;/a&gt;
+            &lt;a href=&quot;javascript://&quot;  on:click=&quot;order.destroy()&quot;&gt;Delete&lt;/a&gt;
           &lt;/p&gt;
         &lt;/div&gt;
       &lt;/div&gt;
       {{else}}
-        &lt;div class=&quot;order empty&quot;&gt;{{emptyMessage}}&lt;/div&gt;
-      {{/each}}
+        &lt;div class=&quot;order empty&quot;&gt;{{this.emptyMessage}}&lt;/div&gt;
+      {{/for}}
     {{/if}}
   &lt;/view&gt;
+  &lt;script type=&quot;view-model&quot;&gt;
+    import { DefineMap } from 'can';
+
+    export default DefineMap.extend(&quot;PmoOrderListVM&quot;, {
+      // EXTERNAL STATEFUL PROPERTIES
+      // These properties are passed from another component. Example:
+      // value: {type: &quot;number&quot;}
+      orders: &quot;any&quot;,
+      listTitle: &quot;string&quot;,
+      status: &quot;string&quot;,
+      statusTitle: &quot;string&quot;,
+      action: &quot;string&quot;,
+      actionTitle: &quot;string&quot;,
+      emptyMessage: &quot;string&quot;,
+
+      // INTERNAL STATEFUL PROPERTIES
+      // These properties are owned by this component.
+
+      // DERIVED PROPERTIES
+      // These properties combine other property values. Example:
+      // get valueAndMessage(){ return this.value + this.message; }
+
+      // METHODS
+      // Functions that can be called by the view. Example:
+      // incrementValue() { this.value++; }
+
+      // SIDE EFFECTS
+      // The following is a good place to perform changes to the DOM
+      // or do things that don't fit in to one of the areas above.
+      connectedCallback(element){
+
+      }
+    });
+  &lt;/script&gt;
 &lt;/can-component&gt;
 
 </code></pre>
-<p>Also update the order history template by changing <code>src/order/history.component</code> to:</p>
+<p>Also update the order history template by changing <code>src/pages/order/history.component</code> to:</p>
 <pre><code class="language-html">&lt;can-component tag=&quot;pmo-order-history&quot;&gt;
   &lt;view&gt;
-    &lt;can-import from=&quot;~/models/order&quot; /&gt;
-
+    &lt;can-import from=&quot;~/components/order/list.component&quot; /&gt;
     &lt;div class=&quot;order-history&quot;&gt;
       &lt;div class=&quot;order header&quot;&gt;
         &lt;address&gt;Name / Address / Phone&lt;/address&gt;
@@ -2028,50 +2172,82 @@ The model can now be used in the template like <code>&lt;order-model get-list=&q
         &lt;div class=&quot;actions&quot;&gt;Action&lt;/div&gt;
       &lt;/div&gt;
 
-      &lt;can-import from=&quot;~/order/list.component&quot; /&gt;
-      &lt;order-model get-list=&quot;{status='new'}&quot;&gt;
-        &lt;pmo-order-list
-          orders:from=&quot;.&quot;
-          list-title:raw=&quot;New Orders&quot;
-          status:raw=&quot;new&quot;
-          status-title:raw=&quot;New Order!&quot;
-          action:raw=&quot;preparing&quot;
-          action-title:raw=&quot;Preparing&quot;
-          empty-message:raw=&quot;No new orders&quot;/&gt;
-      &lt;/order-model&gt;
+      &lt;pmo-order-list
+        orders:from=&quot;this.statusNew&quot;
+        listTitle:raw=&quot;New Orders&quot;
+        status:raw=&quot;new&quot;
+        statusTitle:raw=&quot;New Order!&quot;
+        action:raw=&quot;preparing&quot;
+        actionTitle:raw=&quot;Preparing&quot;
+        emptyMessage:raw=&quot;No new orders&quot;/&gt;
 
-      &lt;order-model get-list=&quot;{status='preparing'}&quot;&gt;
-        &lt;pmo-order-list
-          orders:from=&quot;.&quot;
-          list-title:raw=&quot;Preparing&quot;
-          status:raw=&quot;preparing&quot;
-          status-title:raw=&quot;Preparing&quot;
-          action:raw=&quot;delivery&quot;
-          action-title:raw=&quot;Out for delivery&quot;
-          empty-message:raw=&quot;No orders preparing&quot;/&gt;
-      &lt;/order-model&gt;
+      &lt;pmo-order-list
+        orders:from=&quot;this.statusPreparing&quot;
+        listTitle:raw=&quot;Preparing&quot;
+        status:raw=&quot;preparing&quot;
+        statusTitle:raw=&quot;Preparing&quot;
+        action:raw=&quot;delivery&quot;
+        actionTitle:raw=&quot;Out for delivery&quot;
+        emptyMessage:raw=&quot;No orders preparing&quot;/&gt;
 
-      &lt;order-model get-list=&quot;{status='delivery'}&quot;&gt;
-        &lt;pmo-order-list
-          orders:from=&quot;.&quot;
-          list-title:raw=&quot;Out for delivery&quot;
-          status:raw=&quot;delivery&quot;
-          status-title:raw=&quot;Out for delivery&quot;
-          action:raw=&quot;delivered&quot;
-          action-title:raw=&quot;Delivered&quot;
-          empty-message:raw=&quot;No orders are being delivered&quot;/&gt;
-      &lt;/order-model&gt;
+      &lt;pmo-order-list
+        orders:from=&quot;this.statusDelivery&quot;
+        listTitle:raw=&quot;Out for delivery&quot;
+        status:raw=&quot;delivery&quot;
+        statusTitle:raw=&quot;Out for delivery&quot;
+        action:raw=&quot;delivered&quot;
+        actionTitle:raw=&quot;Delivered&quot;
+        emptyMessage:raw=&quot;No orders are being delivered&quot;/&gt;
 
-      &lt;order-model get-list=&quot;{status='delivered'}&quot;&gt;
-        &lt;pmo-order-list
-          orders:from=&quot;.&quot;
-          list-title:raw=&quot;Delivered&quot;
-          status:raw=&quot;delivered&quot;
-          status-title:raw=&quot;Delivered&quot;
-          empty-message:raw=&quot;No delivered orders&quot;/&gt;
-      &lt;/order-model&gt;
+      &lt;pmo-order-list
+        orders:from=&quot;this.statusDelivered&quot;
+        listTitle:raw=&quot;Delivered&quot;
+        status:raw=&quot;delivered&quot;
+        statusTitle:raw=&quot;Delivered&quot;
+        emptyMessage:raw=&quot;No delivered orders&quot;/&gt;
     &lt;/div&gt;
   &lt;/view&gt;
+  &lt;script type=&quot;view-model&quot;&gt;
+    import { DefineMap } from 'can';
+    import Order from '~/models/order';
+
+    export default DefineMap.extend(&quot;PmoOrderHistoryVM&quot;, {
+      // EXTERNAL STATEFUL PROPERTIES
+      // These properties are passed from another component. Example:
+      // value: {type: &quot;number&quot;}
+
+      // INTERNAL STATEFUL PROPERTIES
+      // These properties are owned by this component.
+      message: { default: &quot;This is the pmo-order-history component&quot; },
+
+      // DERIVED PROPERTIES
+      // These properties combine other property values. Example:
+      // get valueAndMessage(){ return this.value + this.message; }
+      get statusNew() {
+        return Order.getList({ filter: { status: &quot;new&quot; }});
+      },
+      get statusPreparing() {
+        return Order.getList({ filter: { status: &quot;preparing&quot; }});
+      },
+      get statusDelivery() {
+        return Order.getList({ filter: { status: &quot;delivery&quot; }});
+      },
+      get statusDelivered() {
+        return Order.getList({ filter: { status: &quot;delivered&quot; }});
+      },
+
+      // METHODS
+      // Functions that can be called by the view. Example:
+      // incrementValue() { this.value++; }
+
+      // SIDE EFFECTS
+      // The following is a good place to perform changes to the DOM
+      // or do things that don't fit in to one of the areas above.
+      connectedCallback(element){
+
+      }
+    });
+  &lt;/script&gt;
 &lt;/can-component&gt;
 
 </code></pre>
@@ -2081,12 +2257,8 @@ The model can now be used in the template like <code>&lt;order-model get-list=&q
 <pre><code class="language-shell">npm install steal-socket.io@4 --save
 </code></pre>
 <p>Update <code>src/models/order.js</code> to use socket.io to update the Order model in real-time:</p>
-<pre><code class="language-js">import DefineMap from 'can-define/map/';
-import DefineList from 'can-define/list/';
-import set from 'can-set';
-import superMap from 'can-connect/can/super-map/';
+<pre><code class="language-js">import { DefineMap, DefineList, superModel, QueryLogic } from 'can';
 import loader from '@loader';
-import tag from 'can-connect/can/tag/';
 import io from 'steal-socket.io';
 
 const Item = DefineMap.extend({
@@ -2113,17 +2285,23 @@ const ItemsList = DefineList.extend({
   }
 });
 
+const Status = QueryLogic.makeEnum([&quot;new&quot;, &quot;preparing&quot;, &quot;delivery&quot;, &quot;delivered&quot;]);
+
 const Order = DefineMap.extend({
   seal: false
 }, {
-  '_id': '*',
+  '_id': {
+    type: 'any',
+    identity: true
+  },
   name: 'string',
   address: 'string',
   phone: 'string',
   restaurant: 'string',
 
   status: {
-    default: 'new'
+    default: 'new',
+    Type: Status
   },
   items: {
     Default: ItemsList
@@ -2140,21 +2318,15 @@ const Order = DefineMap.extend({
   }
 });
 
-const algebra = new set.Algebra(
-  set.props.id('_id'),
-  set.comparators.enum(&quot;status&quot;, [&quot;new&quot;, &quot;preparing&quot;, &quot;delivery&quot;, &quot;delivered&quot;])
-);
-
 Order.List = DefineList.extend({
   '#': Order
 });
 
-Order.connection = superMap({
+Order.connection = superModel({
   url: loader.serviceBaseURL + '/api/orders',
   Map: Order,
   List: Order.List,
-  name: 'order',
-  algebra
+  name: 'order'
 });
 
 const socket = io(loader.serviceBaseURL);
@@ -2163,12 +2335,10 @@ socket.on('orders created', order =&gt; Order.connection.createInstance(order));
 socket.on('orders updated', order =&gt; Order.connection.updateInstance(order));
 socket.on('orders removed', order =&gt; Order.connection.destroyInstance(order));
 
-tag('order-model', Order.connection);
-
 export default Order;
 
 </code></pre>
-<p><span line-highlight='7,77-81,only'></span>
+<p><span line-highlight='3,73-77,only'></span>
 That's it. If we now open the <a href="http://localhost:8080/order-history">order page</a> we see some already completed default orders. Keeping the page open and placing a new order from another browser or device will update our order page automatically.</p>
 <h2>Create documentation</h2>
 <p>Documenting our code is very important to quickly get other developers up to speed. <a href="https://documentjs.com/">DocumentJS</a> makes documenting code easier. It will generate a full documentation page from Markdown files and code comments in our project.</p>
@@ -2321,7 +2491,7 @@ We'll be building an iOS app if you are a Mac user, and an Android app if you're
 <p>We will use these tools to create an iOS application that can be tested in the iOS simulator.</p>
 <p>Windows users should install the <a href="https://developer.android.com/sdk/index.html">Android Studio</a>, which gives all of the tools we need. See the <a href="./SettingUp.html#android-development-1">setting up guide</a> for full instructions on setting up your Android emulator.</p>
 <p>Now we can install the DoneJS Cordova tools with:</p>
-<pre><code class="language-shell">donejs add cordova@1
+<pre><code class="language-shell">donejs add cordova@2
 </code></pre>
 <p>Answer the question about the URL of the service layer with <code>http://www.place-my-order.com</code>.</p>
 <p>Depending on your operating system you can accept most of the rest of the defaults, unless you would like to build for Android, which needs to be selected from the list of platforms.</p>
@@ -2345,7 +2515,7 @@ To run the Cordova build and launch the simulator we can now run:</p>
 <p>If everything went well, we should see the emulator running our application.</p>
 <h3>Building to Electron</h3>
 <p>To set up the desktop build, we have to add it to our application like this:</p>
-<pre><code class="language-shell">donejs add electron@1
+<pre><code class="language-shell">donejs add electron@2
 </code></pre>
 <p>Answer the question about the URL of the service layer with <code>http://www.place-my-order.com</code>. We can answer the rest of the prompts with the default.</p>
 <p>Then we can run the build like this:</p>
